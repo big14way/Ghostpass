@@ -6,12 +6,12 @@ CLI flags, code examples, or event rules have been verified.
 
 ## First milestone: watcher contract and development setup
 
-- [ ] Coordinate the pnpm monorepo scaffold with the friend / lead.
+- [ ] Coordinate the pnpm monorepo scaffold with the lead, Godswill Idolor.
 - [x] Check the local Node, pnpm, Rust, SQLite, and native build toolchain.
 - [ ] Verify current Zcash software and network requirements against upstream sources.
 - [x] Select and pin the exact watcher tool revision in `versions.lock`.
 - [x] Verify wallet creation, viewing-key import, sync, and memo retrieval commands using that revision.
-- [ ] Freeze the watcher API with the friend before implementation diverges.
+- [ ] Freeze the watcher API with Godswill Idolor before implementation diverges.
 
 ## dr-winner's implementation scope
 
