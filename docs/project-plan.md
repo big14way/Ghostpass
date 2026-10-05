@@ -82,9 +82,9 @@ Dates below are from the guide, rather than independently confirmed commitments.
 - [ ] Watcher reports the expected amount and memo, and transaction IDs match the wallet.
 - [x] Underpayments become paid after a valid top-up; late payments advance expired checkouts (automated tests).
 - [x] Duplicate outputs do not increase credit; reorganized outputs cannot retain stale credit (automated tests).
-- [ ] Issuance and redemption tests cover concurrency, failure recovery, replay, and expired keys.
-- [ ] Simulated-payment mode cannot start in production and is clearly labeled locally.
-- [ ] Both demo merchants work; public key consistency checks are exercised.
+- [x] Issuance and redemption tests cover concurrency, failure recovery, replay, and expired keys.
+- [x] Simulated-payment mode cannot start in production and is clearly labeled locally.
+- [x] Both demo merchants work; public key consistency checks are exercised (dev mode with real blind tokens, checked in Chrome; Mainnet run pending).
 - [ ] Real-payment evidence, privacy limits, dependency versions, and setup instructions are documented.
 
 ## Implementation checkpoint
@@ -99,3 +99,21 @@ Dates below are from the guide, rather than independently confirmed commitments.
 - The next real-payment acceptance check is guide §7.4; no payment has been sent.
 - Read `docs/watcher-api.md` before integrating with the lead's server. The API
   and pool-inclusive payment schema still need agreement with the lead.
+
+## Lead implementation checkpoint (Gwill)
+
+- `packages/core/`: canonical encodings, ZIP 321 URIs, plans, GP1 memos (parsed
+  exactly like the matcher), monthly periods, Authorization header, key-log format.
+- `packages/server/`: monthly blind-RSA keys sealed at rest, checkout and status,
+  atomic and retryable issuance, redeemer with spent set, sessions, hourly cleanup,
+  dev-mode payments through the real matcher. It uses the matcher's pool-inclusive
+  ledger and poller as documented in `docs/watcher-api.md`.
+- `packages/client/`: token wallet, blind issuance with lost-response retry, public
+  key-log check, privacy delay, `ghostFetch`, checkout widget.
+- `apps/`: The Quiet Letter (session mode), Private Price API (per-request mode),
+  dashboard; `pnpm dev` runs them with simulated payments.
+- The verification gates on issuance recovery, the blind-signature round trip, and
+  browser token persistence are covered by tests and a browser run. Multi-tab
+  spending still races, as the guide accepts.
+- Details and departures from the guide: `docs/merchant-server.md`.
+- Next: a real Mainnet subscription once the watcher acceptance check (guide §7.4) passes.
