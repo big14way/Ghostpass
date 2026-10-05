@@ -7,7 +7,7 @@ export function b64url(bytes: Uint8Array): string {
 }
 
 /** Accepts only canonical unpadded base64url, so every byte string has exactly one accepted encoding. */
-export function fromB64url(s: string): Uint8Array {
+export function fromB64url(s: string): Uint8Array<ArrayBuffer> {
   if (!/^[A-Za-z0-9_-]*$/.test(s) || s.length % 4 === 1) throw new Error('invalid_base64url');
   const b64 = s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4);
   const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
