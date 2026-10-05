@@ -61,8 +61,16 @@ function explain(error: unknown): string {
 export function mountCheckout(root: HTMLElement, options: CheckoutWidgetOptions) {
   const { client, plan } = options;
   const pollMs = options.pollMs ?? 10_000;
+  let stopCurrent: (() => void) | undefined;
+
+  /** Other saved checkouts for this plan, newest first. They stay saved so late payments still yield tokens. */
+  async function others(current: string): Promise<PendingCheckout[]> {
+    return (await client.pending()).filter(p => p.plan === plan.id && p.checkout && p.claimCode !== current).sort((a, b) => b.createdAt - a.createdAt);
+  }
 
   function render(pending: PendingCheckout) {
+    stopCurrent?.();
+    let stopped = false;
     const co: CheckoutResponse = pending.checkout;
     const status = h('p', { class: 'gp-status', role: 'status' }, 'Checking payment status.');
     const qrSlot = h('div', { class: 'gp-qr' });
@@ -86,13 +94,25 @@ export function mountCheckout(root: HTMLElement, options: CheckoutWidgetOptions)
       part.addEventListener('click', () => { void client.simulatePayment(co.claimCode, '1000').then(tick, e => { status.textContent = explain(e); }); });
       view.append(h('div', { class: 'gp-dev' }, h('strong', {}, 'DEV MODE: payments are simulated. '), full, part));
     }
+    const again = h('button', { type: 'button', class: 'secondary' }, 'Start a new checkout');
+    again.addEventListener('click', () => { again.setAttribute('disabled', ''); void start(); });
+    const switcher = h('p', { class: 'gp-note' });
+    view.append(h('p', {}, again), switcher);
+    void others(co.claimCode).then(list => {
+      if (!list.length) return;
+      switcher.replaceChildren('Other saved checkouts: ', ...list.map(p => {
+        const b = h('button', { type: 'button', class: 'gp-copy' }, `${p.claimCode.slice(0, 6)}\u2026`);
+        b.addEventListener('click', () => render(p));
+        return b;
+      }));
+    });
     root.replaceChildren(view);
     void qr(co.uri).then(node => qrSlot.replaceChildren(node), () => qrSlot.replaceChildren('QR code unavailable; use the details below.'));
 
     let timer: ReturnType<typeof setTimeout> | undefined;
     let busy = false;
     async function tick() {
-      if (busy) return;
+      if (busy || stopped) return;
       busy = true;
       clearTimeout(timer);
       try {
@@ -112,8 +132,9 @@ export function mountCheckout(root: HTMLElement, options: CheckoutWidgetOptions)
         status.textContent = explain(error);
         if (error instanceof GhostpassError && (error.code.startsWith('key_') || error.code === 'unexpected_merchant' || error.code === 'unknown_claim')) return;
       } finally { busy = false; }
-      timer = setTimeout(() => { void tick(); }, pollMs);
+      if (!stopped) timer = setTimeout(() => { void tick(); }, pollMs);
     }
+    stopCurrent = () => { stopped = true; clearTimeout(timer); };
     void tick();
   }
 
@@ -129,7 +150,7 @@ export function mountCheckout(root: HTMLElement, options: CheckoutWidgetOptions)
 
   /** Resumes the newest unfinished checkout for this plan, or shows the subscribe button. */
   async function mount() {
-    const pending = (await client.pending()).filter(p => p.plan === plan.id && p.checkout).sort((a, b) => b.createdAt - a.createdAt)[0];
+    const [pending] = await others('');
     if (pending) return render(pending);
     const button = h('button', { type: 'button', class: 'gp-buy' }, `Pay ${plan.amountZec} ZEC for ${plan.label} (${plan.tokens} tokens)`);
     button.addEventListener('click', () => { button.setAttribute('disabled', ''); void start(); });

@@ -27,6 +27,60 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  apps/api-demo:
+    dependencies:
+      '@ghostpass/client':
+        specifier: workspace:*
+        version: link:../../packages/client
+      '@ghostpass/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@ghostpass/demo-web':
+        specifier: workspace:*
+        version: link:../../packages/demo-web
+      '@ghostpass/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      express:
+        specifier: 5.1.0
+        version: 5.1.0
+
+  apps/dashboard:
+    dependencies:
+      '@ghostpass/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@ghostpass/demo-web':
+        specifier: workspace:*
+        version: link:../../packages/demo-web
+      '@ghostpass/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      '@ghostpass/watcher-contract':
+        specifier: workspace:*
+        version: link:../../packages/watcher-contract
+      express:
+        specifier: 5.1.0
+        version: 5.1.0
+
+  apps/newsletter:
+    dependencies:
+      '@ghostpass/client':
+        specifier: workspace:*
+        version: link:../../packages/client
+      '@ghostpass/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@ghostpass/demo-web':
+        specifier: workspace:*
+        version: link:../../packages/demo-web
+      '@ghostpass/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      express:
+        specifier: 5.1.0
+        version: 5.1.0
+
   packages/client:
     dependencies:
       '@cloudflare/blindrsa-ts':
@@ -56,6 +110,24 @@ importers:
         version: 5.1.0
 
   packages/core: {}
+
+  packages/demo-web:
+    dependencies:
+      '@ghostpass/client':
+        specifier: workspace:*
+        version: link:../client
+      '@ghostpass/core':
+        specifier: workspace:*
+        version: link:../core
+      '@ghostpass/server':
+        specifier: workspace:*
+        version: link:../server
+      esbuild:
+        specifier: 0.25.12
+        version: 0.25.12
+      express:
+        specifier: 5.1.0
+        version: 5.1.0
 
   packages/matcher:
     dependencies:
