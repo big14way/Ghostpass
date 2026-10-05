@@ -96,7 +96,8 @@ only its own claim codes.
 - Back up each merchant database together with `GP_KEK_HEX`. A lost database means new
   keys for months already logged, and the server refuses to start rather than serve
   keys that browsers would reject.
-- Run one process per merchant database.
+- Run one process per merchant database. Merchants that share a `GP_KEYS_LOG` file
+  must run in the same process (as `pnpm start:demo` does), which serializes appends.
 
 ## Where this departs from the guide
 

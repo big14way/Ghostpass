@@ -4,7 +4,7 @@ import {
 } from 'node:crypto';
 import type { KeyObject } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { RSABSSA } from '@cloudflare/blindrsa-ts';
 import type Database from 'better-sqlite3';
 import { b64url, currentPeriod, keyLog, nextPeriod, redeemUntil, RSA_MODULUS_BITS, RSA_MODULUS_BYTES } from '@ghostpass/core';
@@ -58,8 +58,20 @@ export async function readKeyLog(path: string): Promise<KeyLog> {
   }
 }
 
+// Merchants in one process may share a log file; serialize read-modify-write per file.
+const logQueues = new Map<string, Promise<void>>();
+
 /** Appends missing entries; a different hash for an already logged merchant and period is fatal. */
-export async function appendKeyLog(path: string, entries: KeyLogEntry[]): Promise<void> {
+export function appendKeyLog(path: string, entries: KeyLogEntry[]): Promise<void> {
+  const file = resolve(path);
+  const next = (logQueues.get(file) ?? Promise.resolve()).catch(() => {}).then(() => appendNow(file, entries));
+  logQueues.set(file, next);
+  const settle = () => { if (logQueues.get(file) === next) logQueues.delete(file); };
+  void next.then(settle, settle);
+  return next;
+}
+
+async function appendNow(path: string, entries: KeyLogEntry[]): Promise<void> {
   const log = await readKeyLog(path);
   let changed = false;
   for (const entry of entries) {
@@ -72,7 +84,7 @@ export async function appendKeyLog(path: string, entries: KeyLogEntry[]): Promis
   }
   if (!changed) return;
   await mkdir(dirname(path), { recursive: true });
-  const tmp = `${path}.${process.pid}.tmp`;
+  const tmp = `${path}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`;
   await writeFile(tmp, `${JSON.stringify(log, null, 2)}\n`);
   await rename(tmp, path);
 }

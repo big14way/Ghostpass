@@ -149,6 +149,19 @@ test('key log is append-only: current and next keys are logged once, and a repla
   } finally { first.close(); second.close(); rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('merchants sharing one key log append concurrently without losing entries', async () => {
+  const dir = tempDir();
+  const log = join(dir, 'KEYS.json');
+  try {
+    const entries = Array.from({ length: 8 }, (_, i) => ({ merchant: `M${i}`, period: '2026-10', spkiSha256: String(i).repeat(64) }));
+    await Promise.all(entries.map(e => appendKeyLog(log, [e])));
+    await Promise.all(entries.map(e => appendKeyLog(log, [e])));
+    assert.deepEqual((await readKeyLog(log)).keys.map(k => k.merchant).sort(), entries.map(e => e.merchant));
+    await assert.rejects(appendKeyLog(log, [{ ...entries[0]!, spkiSha256: 'f'.repeat(64) }]), /key_log_conflict/);
+    assert.equal((await readKeyLog(log)).keys.length, 8);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('well-known publishes plans and redeemable, non-future keys oldest first', async () => {
   const h = await harness();
   try {
