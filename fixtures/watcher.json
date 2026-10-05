@@ -1,0 +1,24 @@
+{
+  "accountId": "fixture-merchant",
+  "tipHeight": 3428200,
+  "outputs": [
+    {
+      "txid": "1111111111111111111111111111111111111111111111111111111111111111",
+      "pool": 4,
+      "outIndex": 0,
+      "height": 3428199,
+      "confirmations": 2,
+      "valueZat": "300000",
+      "memoText": "GP1 AAAAAAAAAAAAAAAAAAAAAAAAAA monthly"
+    },
+    {
+      "txid": "2222222222222222222222222222222222222222222222222222222222222222",
+      "pool": 4,
+      "outIndex": 0,
+      "height": 3428199,
+      "confirmations": 2,
+      "valueZat": "200000",
+      "memoText": "GP1 AAAAAAAAAAAAAAAAAAAAAAAAAA monthly"
+    }
+  ]
+}

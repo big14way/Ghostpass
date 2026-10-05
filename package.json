@@ -1,0 +1,25 @@
+{
+  "name": "ghostpass",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": { "node": ">=24.14.1 <25" },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test packages/watcher-contract/test/*.test.ts packages/matcher/test/*.test.ts zwatch/test/*.test.ts",
+    "dev:watcher": "node --import tsx zwatch/src/cli.ts --fixture fixtures/watcher.json",
+    "start:watcher": "node --import tsx zwatch/src/cli.ts",
+    "demo:payments": "node --import tsx scripts/demo-payments.ts",
+    "check:tools": "node --import tsx scripts/doctor.ts",
+    "setup:wallet": "node --import tsx scripts/setup-wallet.ts"
+  },
+  "devDependencies": {
+    "better-sqlite3": "12.4.1",
+    "@types/better-sqlite3": "7.6.13",
+    "@types/express": "5.0.3",
+    "@types/node": "24.7.0",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  },
+  "pnpm": { "onlyBuiltDependencies": ["better-sqlite3", "esbuild"] }
+}

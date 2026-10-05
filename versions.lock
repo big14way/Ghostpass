@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "node": "24.14.1",
+  "pnpm": "10.33.0",
+  "zcashDevtool": {
+    "repository": "https://github.com/zcash/zcash-devtool",
+    "revision": "5a26ee854e634a4e88d1d79dab13f8fbb1eac6b8",
+    "binary": ".local/bin/zcash-devtool",
+    "zcash_client_backend": "0.24.0",
+    "zcash_client_sqlite": "0.22.0",
+    "zcash_protocol": "0.10.5",
+    "verification": "source inspected; compiled help and empty Mainnet wallet sync verified; real payment acceptance pending",
+    "localBuild": {
+      "platform": "darwin-arm64",
+      "rustc": "1.99.0",
+      "sha256": "08563d5bddde3db9a3777294ae9b74743a6945a214b5e9149569ddf3f17ac6a1"
+    }
+  }
+}

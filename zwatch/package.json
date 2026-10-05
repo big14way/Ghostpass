@@ -1,0 +1,11 @@
+{
+  "name": "@ghostpass/zwatch",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@ghostpass/watcher-contract": "workspace:*",
+    "better-sqlite3": "12.4.1",
+    "express": "5.1.0"
+  }
+}

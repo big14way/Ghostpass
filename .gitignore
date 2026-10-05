@@ -4,6 +4,7 @@ node_modules/
 dist/
 coverage/
 .DS_Store
+.local/
 
 # Secrets and local wallet state
 .env

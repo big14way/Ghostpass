@@ -7,10 +7,10 @@ CLI flags, code examples, or event rules have been verified.
 ## First milestone: watcher contract and development setup
 
 - [ ] Coordinate the pnpm monorepo scaffold with the friend / lead.
-- [ ] Check the local Node, pnpm, Rust, SQLite, and native build toolchain.
+- [x] Check the local Node, pnpm, Rust, SQLite, and native build toolchain.
 - [ ] Verify current Zcash software and network requirements against upstream sources.
-- [ ] Select and pin the exact watcher tool revision in `versions.lock`.
-- [ ] Verify wallet creation, viewing-key import, sync, and memo retrieval commands using that revision.
+- [x] Select and pin the exact watcher tool revision in `versions.lock`.
+- [x] Verify wallet creation, viewing-key import, sync, and memo retrieval commands using that revision.
 - [ ] Freeze the watcher API with the friend before implementation diverges.
 
 ## dr-winner's implementation scope
@@ -80,9 +80,22 @@ Dates below are from the guide, rather than independently confirmed commitments.
 ## Acceptance checks
 
 - [ ] Watcher reports the expected amount and memo, and transaction IDs match the wallet.
-- [ ] Underpayments become paid after a valid top-up; late payments advance expired checkouts.
-- [ ] Duplicate outputs do not increase credit; reorganized outputs cannot retain stale credit.
+- [x] Underpayments become paid after a valid top-up; late payments advance expired checkouts (automated tests).
+- [x] Duplicate outputs do not increase credit; reorganized outputs cannot retain stale credit (automated tests).
 - [ ] Issuance and redemption tests cover concurrency, failure recovery, replay, and expired keys.
 - [ ] Simulated-payment mode cannot start in production and is clearly labeled locally.
 - [ ] Both demo merchants work; public key consistency checks are exercised.
 - [ ] Real-payment evidence, privacy limits, dependency versions, and setup instructions are documented.
+
+## Implementation checkpoint
+
+- `zwatch/`: authenticated loopback API, fixture backend, serialized native sync
+  and memo enhancement, read-only wallet adapter, complete/stale snapshot checks.
+- `packages/watcher-contract/`: validated API types, decimal amounts, memo decoding.
+- `packages/matcher/`: atomic full-snapshot reconciliation, payment state handling,
+  issued-payment cleanup, and a serialized polling helper.
+- Merchant wallet created locally with an encrypted seed; zwatch imported its
+  viewing key and completed an empty Mainnet sync with zero balance.
+- The next real-payment acceptance check is guide §7.4; no payment has been sent.
+- Read `docs/watcher-api.md` before integrating with the lead's server. The API
+  and pool-inclusive payment schema still need agreement with the lead.

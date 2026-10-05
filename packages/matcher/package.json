@@ -1,0 +1,14 @@
+{
+  "name": "@ghostpass/matcher",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./poller": "./src/poller.ts"
+  },
+  "dependencies": {
+    "@ghostpass/watcher-contract": "workspace:*",
+    "better-sqlite3": "12.4.1"
+  }
+}
