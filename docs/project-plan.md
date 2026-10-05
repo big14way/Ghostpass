@@ -1,0 +1,88 @@
+# Ghostpass working plan
+
+Source: [the original build guide](build-guide.md), supplied on 5 October 2026.
+This plan organizes the proposal; it does not establish that its external facts,
+CLI flags, code examples, or event rules have been verified.
+
+## First milestone: watcher contract and development setup
+
+- [ ] Coordinate the pnpm monorepo scaffold with the friend / lead.
+- [ ] Check the local Node, pnpm, Rust, SQLite, and native build toolchain.
+- [ ] Verify current Zcash software and network requirements against upstream sources.
+- [ ] Select and pin the exact watcher tool revision in `versions.lock`.
+- [ ] Verify wallet creation, viewing-key import, sync, and memo retrieval commands using that revision.
+- [ ] Freeze the watcher API with the friend before implementation diverges.
+
+## dr-winner's implementation scope
+
+1. **Merchant wallet:** establish a shielded receiving address and a viewing-only
+   account for the watcher. Keep seeds, spending keys, viewing keys, and wallet
+   databases out of source control. Actual wallet funding and transactions remain
+   separate operations from repository setup.
+2. **Watcher:** implement a service bound to `127.0.0.1`, importing viewing keys,
+   syncing accounts, and exposing received amounts, memos, and confirmations.
+3. **Matcher:** consume watcher outputs, validate the GP1 memo and plan, count
+   payments without duplicates, and handle underpayments, top-ups, late payments,
+   confirmations, and chain reorganizations.
+4. **Integration:** connect the watcher and matcher to the lead's checkout and
+   issuance flow. Start with simulated payments; validate real payments once the
+   toolchain and wallet are ready.
+5. **Privacy and deployment:** review retained data, key consistency, timing and
+   network leaks; support deployment with TLS and the stated logging policy.
+
+NEAR Intents remains optional, after the shielded-payment flow works end to end.
+
+## Proposed watcher API
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/accounts` | Import `{name, ufvk, birthday}` and return `{accountId}` |
+| GET | `/accounts/:id/balance` | Return `{confirmedZat, pendingZat, tipHeight}` |
+| GET | `/accounts/:id/received?sinceHeight=N` | Return `{tipHeight, outputs}` |
+| GET | `/health` | Return `{tipHeight, lastSyncAt}` |
+
+Each received output includes `txid`, `outIndex`, `pool`, `height`,
+`confirmations`, `valueZat`, and nullable `memoText`. Amounts in zatoshis are
+decimal strings. Confirm numeric types, pool identifiers, query boundaries,
+error responses, and synchronization behavior when freezing the contract.
+
+## Verification gates before adopting the examples
+
+- Confirm event deadline, track, repository visibility, and participation rules.
+- Confirm upgrade activation claims, shielded-pool behavior, fees, wallet support,
+  and supported tool versions from current primary sources.
+- Inspect the pinned wallet database schema; verify memo availability, output
+  ownership, pool codes, transaction ID byte order, and chain-tip meaning.
+- Ensure matcher output identity includes the shielded pool as well as transaction
+  ID and output index. The guide's SQL key omits the pool.
+- Design reorganization recovery to remove or revise orphaned payments and revisit
+  confirmed checkouts. Re-reading recent blocks alone does not establish recovery.
+- Define crash and response-loss recovery for issuance. The example marks a claim
+  issued before signing but has no durable response-retrieval mechanism.
+- Verify the blind-signature library API and complete a token round trip before
+  adopting key generation and import examples.
+- Check browser token persistence and concurrent spending before claiming reliable
+  multi-tab behavior; the guide explicitly accepts a race for its demo.
+
+## Proposed delivery milestones
+
+Dates below are from the guide, rather than independently confirmed commitments.
+
+| Date | Target |
+| --- | --- |
+| 6–7 October | Toolchain, wallet preparation, watcher API agreement, initial import and sync |
+| 10–12 October | Received payments with memos, watcher acceptance check, matcher integration |
+| 13–16 October | Confirmations, underpayments and top-ups, late payments, data cleanup |
+| 17–20 October | Privacy review and deployment |
+| 21–23 October | End-to-end payment evidence and fixes; optional work only if ready |
+| 24–27 October | README, demonstration video, evidence review, target submission |
+
+## Acceptance checks
+
+- [ ] Watcher reports the expected amount and memo, and transaction IDs match the wallet.
+- [ ] Underpayments become paid after a valid top-up; late payments advance expired checkouts.
+- [ ] Duplicate outputs do not increase credit; reorganized outputs cannot retain stale credit.
+- [ ] Issuance and redemption tests cover concurrency, failure recovery, replay, and expired keys.
+- [ ] Simulated-payment mode cannot start in production and is clearly labeled locally.
+- [ ] Both demo merchants work; public key consistency checks are exercised.
+- [ ] Real-payment evidence, privacy limits, dependency versions, and setup instructions are documented.
