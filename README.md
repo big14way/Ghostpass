@@ -9,7 +9,7 @@ metadata, timing, and small anonymity sets remain privacy limits.
 
 ## Project documents
 
-- [Original build guide](docs/build-guide.md): Godswill Idolor's proposal, preserved unchanged.
+- [Original build guide](docs/build-guide.md): Gwill's proposal, preserved unchanged.
 - [Working plan](docs/project-plan.md): responsibilities, milestones, and verification gates.
 - [Watcher API and integration guide](docs/watcher-api.md): running your components and connecting the lead's server.
 
@@ -21,7 +21,7 @@ a target submission date of 27 October. Event rules and dates still need confirm
 | Owner | Scope from the guide |
 | --- | --- |
 | dr-winner | `zwatch`, merchant wallet setup, payment matcher, confirmations and payment edge cases, privacy review, deployment support |
-| Godswill Idolor ([big14way](https://github.com/big14way)), lead | Core package, blind-token issuer and redeemer, browser token wallet, demo merchants, dashboard, submission materials |
+| Gwill ([big14way](https://github.com/big14way)), lead | Core package, blind-token issuer and redeemer, browser token wallet, demo merchants, dashboard, submission materials |
 
 The proposed stack is a pnpm monorepo with TypeScript, Express, SQLite, Next.js,
 and `@cloudflare/blindrsa-ts`. Your payment watcher and matcher are implemented
