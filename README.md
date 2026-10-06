@@ -147,6 +147,9 @@ payment. Their transaction IDs will be listed here.
 - **Confirmations are a settlement assumption.** A reorganization deeper than two
   blocks after issuance cannot revoke tokens already handed out.
 - **Two browser tabs can race** for the same token; the server rejects the second use.
+- **Checkout limits are global.** The merchant never sees IP addresses, so it cannot limit
+  per visitor. A flood of new checkouts makes others wait a minute, but cannot grow the
+  database faster than 10 checkouts a minute.
 - **zcash-devtool is prototyping software.** Keep only small amounts in the merchant wallet.
 - Each merchant database must be served by a single process.
 

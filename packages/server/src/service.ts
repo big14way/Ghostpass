@@ -35,6 +35,10 @@ export interface GhostpassConfig {
   /** Session cookies require HTTPS unless this is false (local development only). */
   secureCookies?: boolean;
   checkoutTtlMs?: number;
+  /** New checkouts per minute across all visitors (the merchant never sees IP addresses). Default 10. */
+  checkoutsPerMinute?: number;
+  /** Unpaid, unexpired checkouts allowed at once. Default 100. */
+  maxOpenCheckouts?: number;
   sessionTtlMs?: number;
   now?: () => number;
   onError?: (code: string) => void;
@@ -43,6 +47,21 @@ export interface GhostpassConfig {
 export const SESSION_COOKIE = 'gp_s';
 const ISSUANCE_REPLAY_MS = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
+
+/** Token bucket refilled continuously; returns 0 when allowed, otherwise seconds until the next slot. */
+function tokenBucket(perMinute: number) {
+  let tokens = perMinute;
+  let at: number | undefined;
+  return (now: number): number => {
+    if (at !== undefined) tokens = Math.min(perMinute, tokens + (Math.max(0, now - at) * perMinute) / 60_000);
+    at = now;
+    if (tokens >= 1) {
+      tokens -= 1;
+      return 0;
+    }
+    return Math.ceil(((1 - tokens) * 60) / perMinute);
+  };
+}
 
 export class HttpError extends Error {
   constructor(readonly status: number, readonly code: string, readonly extra: Record<string, unknown> = {}) {
@@ -64,6 +83,10 @@ export function createGhostpass(config: GhostpassConfig) {
   const checkoutTtl = config.checkoutTtlMs ?? 2 * HOUR;
   const sessionTtl = config.sessionTtlMs ?? 24 * HOUR;
   const secureCookies = config.secureCookies ?? true;
+  const checkoutsPerMinute = config.checkoutsPerMinute ?? 10;
+  const maxOpenCheckouts = config.maxOpenCheckouts ?? 100;
+  if (![checkoutsPerMinute, maxOpenCheckouts].every(n => Number.isSafeInteger(n) && n > 0)) throw new Error('invalid_checkout_limits');
+  const takeCheckoutSlot = tokenBucket(checkoutsPerMinute);
 
   // The merchant name appears in a quoted WWW-Authenticate realm and in ZIP 321 messages.
   if (!/^[^"\\\x00-\x1f\x7f]{1,80}$/.test(merchant)) throw new Error('invalid_merchant_name');
@@ -98,10 +121,21 @@ export function createGhostpass(config: GhostpassConfig) {
     const planId: unknown = (req.body as { plan?: unknown } | undefined)?.plan;
     const plan = typeof planId === 'string' ? plans.get(planId) : undefined;
     if (!plan) throw new HttpError(400, 'unknown_plan');
+    const now = clock();
+    // Unpaid checkouts are kept so late payments are honoured; bound how fast anyone can create them.
+    const open = db.prepare("SELECT COUNT(*) AS n FROM checkouts WHERE status = 'AWAITING_PAYMENT' AND expires_at > ?").get(now) as { n: number };
+    if (open.n >= maxOpenCheckouts) {
+      res.set('Retry-After', '60');
+      throw new HttpError(503, 'checkout_capacity', { retryAfter: 60 });
+    }
+    const wait = takeCheckoutSlot(now);
+    if (wait) {
+      res.set('Retry-After', String(wait));
+      throw new HttpError(429, 'rate_limited', { retryAfter: wait });
+    }
     const claimCode = newClaimCode();
     const memo = buildMemo(claimCode, plan.id);
     const uri = buildZip321(address, plan.priceZat, memo, `${merchant} - ${plan.label}`);
-    const now = clock();
     const expiresAt = now + checkoutTtl;
     db.prepare('INSERT INTO checkouts (claim_code, plan, price_zat, created_at, expires_at) VALUES (?, ?, ?, ?, ?)')
       .run(claimCode, plan.id, plan.priceZat, now, expiresAt);

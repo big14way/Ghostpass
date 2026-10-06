@@ -28,7 +28,7 @@ app.get('/api/v1/price', gp.requireGhostpass(), handler);
 | Method | Path | Request → response |
 | --- | --- | --- |
 | GET | `/.well-known/ghostpass.json` | `{v: 1, merchant, current, keys: [{period, spki, redeemUntil}], plans: [{id, label, amountZec, tokens, mode}]}`; keys are the redeemable ones up to the current period, oldest first |
-| POST | `/v1/checkout` | `{plan}` → `{claimCode, uri, address, amountZec, memo, expiresAt}` |
+| POST | `/v1/checkout` | `{plan}` → `{claimCode, uri, address, amountZec, memo, expiresAt}`; `429 rate_limited` or `503 checkout_capacity` (both with `retryAfter` and `Retry-After`) when the limits below are reached |
 | GET | `/v1/checkout/:claimCode` | `{status, paidZec, confirmations}`; an unpaid checkout past `expiresAt` reports `EXPIRED` immediately |
 | POST | `/v1/issue` | `{claimCode, period, blinded: [base64url]}` → `{period, blindSigs: [base64url]}` |
 | POST | `/dev/pay/:claimCode` | Dev mode only. Optional `{zat: "<decimal>"}` pays part of the price; otherwise the full price |
@@ -63,6 +63,10 @@ and `payment_required`, `invalid_token` or `token_already_spent`; it returns `50
   signature under that key.
 - **Sessions:** one token buys a 24-hour `gp_s` cookie (`HttpOnly`, `SameSite=Strict`,
   `Secure` in real mode). Only the SHA-256 of the session ID is stored.
+- **Checkout limits:** the merchant never sees IP addresses, so limits are global: by
+  default 10 new checkouts a minute (`checkoutsPerMinute`) and at most 100 unpaid,
+  unexpired checkouts at once (`maxOpenCheckouts`). Unpaid checkouts are never deleted,
+  so that late payments are honoured; the limits bound how fast they can accumulate.
 - **Cleanup (hourly):** expired sessions, spent-token hashes for periods past their
   redeem window, and stored issuance responses older than 24 hours.
 

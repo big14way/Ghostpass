@@ -60,6 +60,7 @@ function explain(error: unknown): string {
   const code = error instanceof GhostpassError ? error.code : 'network_error';
   if (code.startsWith('key_')) return `Stopped: the merchant's signing key does not match the public key log (${code}). Your claim code is still valid.`;
   if (code === 'unexpected_merchant') return 'Stopped: this page is configured for a different merchant.';
+  if (code === 'rate_limited' || code === 'checkout_capacity') return 'Too many new checkouts right now. Please try again in a minute.';
   return `Something went wrong (${code}). Your claim code is saved; reload the page to retry.`;
 }
 
@@ -151,7 +152,9 @@ export function mountCheckout(root: HTMLElement, options: CheckoutWidgetOptions)
       const pending = (await client.pending()).find(p => p.claimCode === co.claimCode);
       if (pending) render(pending);
     } catch (error) {
-      root.replaceChildren(h('p', { class: 'gp-status' }, explain(error)));
+      // Keep the previous view (a saved checkout or the pay button) usable, with the reason on top.
+      await mount();
+      root.prepend(h('p', { class: 'gp-status', role: 'alert' }, explain(error)));
     }
   }
 
