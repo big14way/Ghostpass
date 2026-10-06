@@ -87,6 +87,8 @@ only its own claim codes.
 
 ## Deployment notes
 
+The full runbook is [deployment.md](deployment.md); these are the design constraints behind it.
+
 - Run zwatch and the demos on one host, bound to `127.0.0.1`, behind a TLS reverse
   proxy. The apps trust `X-Forwarded-*` only from loopback. Configure the proxy not to
   log IP addresses; the apps log no requests.

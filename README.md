@@ -47,20 +47,21 @@ first-use privacy delay from 1–10 minutes to 5–15 seconds.
 
 ## Real payment (Mainnet)
 
-1. Build the pinned `zcash-devtool` and create the merchant wallet with
-   `pnpm setup:wallet`. It imports only the viewing key into zwatch and writes `.env`
-   with the watcher settings, `MERCHANT_ACCOUNT_ID` and `MERCHANT_UA`. See
-   [the watcher guide](docs/watcher-api.md#merchant-wallet-and-native-tool).
-2. Add `GP_KEK_HEX` (`openssl rand -hex 32`), `GP_ADMIN_PASSWORD` and `GP_KEYS_URL`
-   to `.env` ([.env.example](.env.example) lists every setting).
-3. Run `pnpm start:watcher`, then `NODE_ENV=production pnpm start:demo`, behind a TLS
-   reverse proxy: session cookies are `Secure`, and access logs must not record IP addresses.
-4. On first start, the merchants append the key hashes for this month and next to
-   [KEYS.json](KEYS.json). Commit and push it before taking payments: browsers refuse
-   any issuer key that is not in the public log.
-5. Scan the checkout QR code with Zodl and pay. Two confirmations later, the browser receives its tokens.
+Production runs on one server; [docs/deployment.md](docs/deployment.md) is the
+step-by-step runbook. In short:
 
-Configuration, endpoints and deployment notes: [docs/merchant-server.md](docs/merchant-server.md).
+- The merchant wallet stays on dr-winner's machine; only its viewing key is piped
+  to the server (`pnpm import:viewing-key`).
+- zwatch and the two merchants run as hardened systemd services behind Caddy, which
+  provides HTTPS and writes no access logs.
+- The merchants' issuer key hashes go into [KEYS.json](KEYS.json) on `main` before
+  any payment is taken, because browsers refuse keys missing from the public log.
+  `pnpm check:deploy` reports anything still missing. Only that deployment publishes
+  keys: never commit a `KEYS.json` written by a local or test run.
+- Then scan the checkout QR code with Zodl and pay. Two confirmations later, the
+  browser receives its tokens.
+
+Endpoints, configuration and design notes: [docs/merchant-server.md](docs/merchant-server.md).
 
 ## How it works
 
@@ -180,6 +181,8 @@ pnpm dev:watcher      # zwatch HTTP API with fixture payments
 pnpm start:watcher    # zwatch with the real viewing-only wallet, using .env
 pnpm check:tools      # toolchain check
 pnpm setup:wallet     # create the encrypted merchant wallet and import its viewing key
+pnpm import:viewing-key --birthday <height>   # on the server: import a piped viewing key into zwatch
+pnpm check:deploy     # on the server: validate .env, zwatch, and the public key log
 ```
 
 dr-winner's local toolchain and empty encrypted merchant wallet have been prepared.
@@ -190,6 +193,7 @@ Before funding, back up the two wallet files listed in the [integration guide](d
 - [Original build guide](docs/build-guide.md): Gwill's proposal, preserved unchanged.
 - [Working plan](docs/project-plan.md): responsibilities, milestones, and verification gates.
 - [Merchant server, client and demos](docs/merchant-server.md): endpoints, configuration, and where the implementation departs from the guide.
+- [Deployment runbook](docs/deployment.md): one Ubuntu server, systemd, Caddy, viewing-key import, and key publishing.
 - [Watcher API and integration guide](docs/watcher-api.md): running zwatch and the matcher.
 
 The guide specifies the Shielded Payments track, a 28 October 2026 deadline, and

@@ -1,0 +1,46 @@
+# zwatch: watches the merchant's viewing key only. The spending seed never lives on this server.
+[Unit]
+Description=Ghostpass zwatch payment watcher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ghostpass
+Group=ghostpass
+WorkingDirectory=/opt/ghostpass
+Environment=NODE_ENV=production
+Environment=HOME=/opt/ghostpass/.local/home
+ExecStart=/usr/local/bin/node --import tsx zwatch/src/cli.ts
+Restart=on-failure
+RestartSec=5
+UMask=0077
+
+# Everything is read-only except the local state directory.
+ProtectSystem=strict
+ReadWritePaths=/opt/ghostpass/.local
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+RestrictSUIDSGID=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+RestrictNamespaces=yes
+RestrictRealtime=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectProc=invisible
+RemoveIPC=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

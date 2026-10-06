@@ -3,7 +3,7 @@ import { once } from 'node:events';
 import type { Server } from 'node:http';
 import { loadEnvFile } from 'node:process';
 import type { Express } from 'express';
-import { devModeEnabled, merchantEnv } from '../packages/demo-web/src/index.ts';
+import { devModeEnabled, merchantEnv, unpublishedKeys } from '../packages/demo-web/src/index.ts';
 import { createNewsletter, NEWSLETTER } from '../apps/newsletter/src/app.ts';
 import { API_DEMO, createApiDemo } from '../apps/api-demo/src/app.ts';
 import { createDashboard, DASHBOARD } from '../apps/dashboard/src/app.ts';
@@ -47,6 +47,22 @@ console.log(`${newsletterEnv.merchantName}: http://${newsletterEnv.host}:${newsl
 console.log(`${apiEnv.merchantName}: http://${apiEnv.host}:${apiEnv.port}`);
 console.log(`Dashboard: http://${newsletterEnv.host}:${dashboardPort}`);
 if (!process.env.GP_ADMIN_PASSWORD) console.log(`Dashboard password for this run (any user name): ${password}`);
+
+// Browsers refuse issuer keys missing from the public log, so say so loudly (now and every 6 hours).
+async function checkPublishedKeys() {
+  try {
+    const missing = await unpublishedKeys(newsletterEnv.keyLogPath, newsletterEnv.keysUrl, [newsletterEnv.merchantName, apiEnv.merchantName]);
+    for (const k of missing) {
+      console.warn(`WARNING: ${newsletterEnv.keysUrl} lacks the ${k.merchant} key for ${k.period}; browsers refuse it until ${newsletterEnv.keyLogPath} is committed to the public repository.`);
+    }
+  } catch (error) {
+    console.warn(`WARNING: could not check the public key log: ${(error as Error).message}`);
+  }
+}
+if (!devMode) {
+  await checkPublishedKeys();
+  setInterval(() => { void checkPublishedKeys(); }, 6 * 60 * 60 * 1000).unref();
+}
 
 let stopping = false;
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => {

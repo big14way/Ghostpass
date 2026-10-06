@@ -1,0 +1,46 @@
+# The Quiet Letter, Private Price API and the dashboard, bound to 127.0.0.1 behind Caddy.
+[Unit]
+Description=Ghostpass demo merchants and dashboard
+After=network-online.target ghostpass-zwatch.service
+Wants=network-online.target ghostpass-zwatch.service
+
+[Service]
+Type=simple
+User=ghostpass
+Group=ghostpass
+WorkingDirectory=/opt/ghostpass
+Environment=NODE_ENV=production
+Environment=HOME=/opt/ghostpass/.local/home
+ExecStart=/usr/local/bin/node --import tsx scripts/demo.ts
+Restart=on-failure
+RestartSec=5
+UMask=0077
+
+# Everything is read-only except the local state directory (databases and the key log).
+ProtectSystem=strict
+ReadWritePaths=/opt/ghostpass/.local
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+RestrictSUIDSGID=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+RestrictNamespaces=yes
+RestrictRealtime=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectProc=invisible
+RemoveIPC=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

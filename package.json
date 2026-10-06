@@ -13,7 +13,9 @@
     "start:watcher": "node --import tsx zwatch/src/cli.ts",
     "demo:payments": "node --import tsx scripts/demo-payments.ts",
     "check:tools": "node --import tsx scripts/doctor.ts",
-    "setup:wallet": "node --import tsx scripts/setup-wallet.ts"
+    "setup:wallet": "node --import tsx scripts/setup-wallet.ts",
+    "import:viewing-key": "node --import tsx scripts/import-viewing-key.ts",
+    "check:deploy": "node --import tsx scripts/check-deploy.ts"
   },
   "devDependencies": {
     "better-sqlite3": "12.4.1",
