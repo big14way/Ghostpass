@@ -30,6 +30,12 @@ function copyButton(text: string): HTMLElement {
   return button;
 }
 
+/** On a phone the QR code cannot be scanned from the same screen, so also link the ZIP 321 URI itself. */
+function walletLink(uri: string): Node {
+  if (!/^zcash:[A-Za-z0-9]+\?/.test(uri)) return document.createTextNode('');
+  return h('p', {}, h('a', { href: uri, class: 'gp-open-wallet' }, 'Open in wallet app'), ' on this device, or scan the QR code with your phone.');
+}
+
 async function qr(uri: string): Promise<Node> {
   const svg = await QRCode.toString(uri, { type: 'svg', errorCorrectionLevel: 'M', margin: 2 });
   const doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
@@ -77,6 +83,7 @@ export function mountCheckout(root: HTMLElement, options: CheckoutWidgetOptions)
     const view = h('section', { class: 'gp-checkout' },
       h('h3', {}, `${plan.label}: ${co.amountZec} ZEC`),
       qrSlot,
+      walletLink(co.uri),
       h('p', {}, 'Scan with a shielded Zcash wallet such as Zodl, or pay manually:'),
       h('dl', {},
         h('dt', {}, 'Amount'), h('dd', {}, h('code', {}, `${co.amountZec} ZEC`)),
