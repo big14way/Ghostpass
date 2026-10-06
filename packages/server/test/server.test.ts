@@ -10,6 +10,7 @@ import express from 'express';
 import Database from 'better-sqlite3';
 import { b64url, formatAuthorization, fromB64url, PLANS } from '@ghostpass/core';
 import type { CheckoutResponse, CheckoutStatusResponse, IssueResponse, Plan, Token, WellKnown } from '@ghostpass/core';
+import type { GhostpassConfig } from '../src/index.ts';
 import {
   appendKeyLog, blindSign, createGhostpass, installSchema, IssuerKeys, merchantStats, readKeyLog, seal, suite, unseal,
 } from '../src/index.ts';
@@ -24,7 +25,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const tempDir = () => mkdtempSync(join(tmpdir(), 'ghostpass-server-test-'));
 const post = (url: string, body: unknown) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
-async function harness(options: { db?: Database.Database; merchant?: string; dir?: string; now?: number } = {}) {
+async function harness(options: { db?: Database.Database; merchant?: string; dir?: string; now?: number; overrides?: Partial<GhostpassConfig> } = {}) {
   const dir = options.dir ?? tempDir();
   const clock = { now: options.now ?? OCT_10 };
   const db = options.db ?? new Database(':memory:');
@@ -33,7 +34,7 @@ async function harness(options: { db?: Database.Database; merchant?: string; dir
   const gp = createGhostpass({
     db, merchantName: options.merchant ?? 'Test Merchant', merchantAddress: UA, plans: [TEST_PLAN, PLANS.monthly],
     kek: KEK, keyLogPath: join(dir, 'KEYS.json'), payments: { kind: 'simulated' }, secureCookies: false,
-    now: () => clock.now, onError: code => errors.push(code),
+    now: () => clock.now, onError: code => errors.push(code), ...options.overrides,
   });
   await gp.start();
   const app = express();
@@ -204,6 +205,47 @@ test('checkout returns a ZIP 321 request with the GP1 memo and validates input',
     assert.equal((await fetch(`${h.base}/v1/checkout/${'A'.repeat(26)}`)).status, 404);
     assert.equal((await fetch(`${h.base}/v1/checkout/not-a-code`)).status, 404);
   } finally { await h.close(); }
+});
+
+test('checkout creation is rate-limited globally, and invalid requests do not use the budget', async () => {
+  const h = await harness();
+  try {
+    for (let i = 0; i < 15; i++) assert.equal((await post(`${h.base}/v1/checkout`, { plan: 'nope' })).status, 400);
+    for (let i = 0; i < 10; i++) await h.checkout();
+    const limited = await post(`${h.base}/v1/checkout`, { plan: 'test' });
+    assert.deepEqual([limited.status, limited.headers.get('retry-after'), await limited.json()], [429, '6', { error: 'rate_limited', retryAfter: 6 }]);
+    h.clock.now += 5_999;
+    assert.equal((await post(`${h.base}/v1/checkout`, { plan: 'test' })).status, 429);
+    h.clock.now += 1;
+    await h.checkout();
+    assert.equal((await post(`${h.base}/v1/checkout`, { plan: 'test' })).status, 429);
+    h.clock.now += 60_000;
+    for (let i = 0; i < 10; i++) await h.checkout();
+    assert.equal((await post(`${h.base}/v1/checkout`, { plan: 'test' })).status, 429);
+  } finally { await h.close(); }
+});
+
+test('open unpaid checkouts are capped; paid and expired checkouts do not count', async () => {
+  const h = await harness({ overrides: { maxOpenCheckouts: 3, checkoutsPerMinute: 1000 } });
+  try {
+    const first = await h.checkout();
+    await h.checkout();
+    await h.checkout();
+    const full = await post(`${h.base}/v1/checkout`, { plan: 'test' });
+    assert.deepEqual([full.status, full.headers.get('retry-after'), await full.json()], [503, '60', { error: 'checkout_capacity', retryAfter: 60 }]);
+    await post(`${h.base}/dev/pay/${first.claimCode}`, {});
+    await h.checkout();
+    assert.equal((await post(`${h.base}/v1/checkout`, { plan: 'test' })).status, 503);
+    h.clock.now = first.expiresAt + 1;
+    for (let i = 0; i < 3; i++) await h.checkout();
+    assert.equal((await post(`${h.base}/v1/checkout`, { plan: 'test' })).status, 503);
+  } finally { await h.close(); }
+  for (const limits of [{ checkoutsPerMinute: 0 }, { maxOpenCheckouts: 1.5 }]) {
+    assert.throws(() => createGhostpass({
+      db: new Database(':memory:'), merchantName: 'M', merchantAddress: UA, plans: [TEST_PLAN], kek: KEK, keyLogPath: 'unused',
+      payments: { kind: 'simulated' }, ...limits,
+    }), /invalid_checkout_limits/);
+  }
 });
 
 test('full token round trip: underpay, top up, issue once, redeem once, reject replays and forgeries', async () => {

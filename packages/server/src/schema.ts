@@ -55,6 +55,7 @@ export function installSchema(db: Database.Database, merchant: string): void {
       created_at   INTEGER NOT NULL
     );
     CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
+    CREATE INDEX IF NOT EXISTS checkouts_open ON checkouts (status, expires_at);
   `);
   installPaymentTables(db);
   // One merchant per database: refuse to mix two merchants' keys, checkouts, or spent sets.
