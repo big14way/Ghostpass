@@ -117,3 +117,33 @@ Dates below are from the guide, rather than independently confirmed commitments.
   spending still races, as the guide accepts.
 - Details and departures from the guide: `docs/merchant-server.md`.
 - Next: a real Mainnet subscription once the watcher acceptance check (guide §7.4) passes.
+
+## Plan to submission (agreed 6 October)
+
+Goal: a live Mainnet deployment, real payment evidence, the remaining UX and privacy
+gaps closed, and a strong three-minute video. Judging criteria are not yet confirmed;
+until they are, aim at ZecHub 3.0's: it works, meaningful Zcash use, completeness,
+originality, ecosystem impact, and documentation.
+
+**Budget:** a small VPS (2 vCPU, 4 GB, about €5–10 a month), a domain (about $10–20 a
+year), and about 0.1 ZEC across two Zodl wallets for 10+ subscriptions from two
+payers. Payments go to our own merchant wallet, so most of the ZEC returns.
+
+| Dates | Gwill | dr-winner | Code (lead) |
+| --- | --- | --- | --- |
+| 6–12 Oct | Check that Zodl keeps the memo from a scanned ZIP 321 QR code and opens `zcash:` links; buy the domain and VPS; fund two Zodl wallets | Watcher acceptance check (guide §7.4) | "Open in wallet" link for phone checkouts; checkout rate limits |
+| 8–12 Oct | Deploy with `docs/deployment.md`; publish keys; first real subscription | Viewing-key import (runbook section 7) | Fix what the first real payment reveals |
+| 13–20 Oct | Review the privacy story | Matcher: skip rewriting unchanged checkouts (see below) | Tor onion addresses for both merchants; timing strict mode (§15.2); `@ghostpass/server` as an npm package with a three-line Express guide; uptime monitoring and nightly backups |
+| 20 Oct | Check the NU7 Mainnet decision; if judging runs past 5 November, plan the zcash-devtool update | Same | |
+| 17–23 Oct | 5–10 Mainnet subscriptions across both plans and both wallets, including a topped-up underpayment and a payment after `expiresAt`; record txids | Same | README evidence section |
+| 21–24 Oct | Record the Zodl payment on the phone and the browser flow | Review | Video script and narrated final cut (guide §20, at most 3 minutes, replay rejected live) |
+| 25–27 Oct | Confirm rules (public repo, dr-winner on two submissions); choose a license; Community Choice clip if allowed; **submit on the 27th** | Review the README | Final README |
+
+**Skipped unless everything else is done:** NEAR Intents (adds a public transparent
+hop) and Privacy Pass (RFC 9577) compatibility.
+
+**For dr-winner:** `reconcilePayments` rewrites every non-issued checkout on each
+20-second poll. Abandoned checkouts are never deleted (late payments must be
+honoured), so a flood of them would slow every poll. The server now rate-limits
+checkout creation. Skipping updates whose paid amount, confirmations and status are
+unchanged would remove the remaining cost.
