@@ -4,3 +4,4 @@ export { baseApp, bundle, esc, finish, page, securityHeaders, serveAssets, serve
 export type { PageOptions } from './http.ts';
 export { createMerchantApp } from './merchant.ts';
 export type { PageConfig } from './browser.ts';
+export { unpublishedKeys } from './keylog.ts';

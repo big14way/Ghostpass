@@ -1,0 +1,33 @@
+# Ghostpass reverse proxy. Replace the three example hostnames with your own
+# (see docs/deployment.md); Caddy obtains and renews their TLS certificates.
+#
+# Privacy (guide §15.3): there is deliberately no `log` directive, so Caddy writes
+# no access logs, and X-Forwarded-For is removed so the apps never see client IPs.
+
+(ghostpass) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+}
+
+letter.example.com {
+	import ghostpass
+	reverse_proxy 127.0.0.1:3000 {
+		header_up -X-Forwarded-For
+	}
+}
+
+api.example.com {
+	import ghostpass
+	reverse_proxy 127.0.0.1:3001 {
+		header_up -X-Forwarded-For
+	}
+}
+
+dashboard.example.com {
+	import ghostpass
+	reverse_proxy 127.0.0.1:3002 {
+		header_up -X-Forwarded-For
+	}
+}
